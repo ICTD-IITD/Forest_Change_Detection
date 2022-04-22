@@ -1,0 +1,189 @@
+// Get a feature collection with just the Congo feature
+var countries = ee.FeatureCollection('projects/ee-eshan292/assets/testareaforestcleared');
+var congo = countries.filterMetadata('Country', 'equals', 'Congo');
+// Load up the oil palm concessions
+var oilPalm = ee.FeatureCollection('ft:1Q-5XgXQpAeRhILPoPTx8gnGTzUpSJx-EtKu_BCw', 'geometry');
+// Load up the fiber concessions
+var fiber = ee.FeatureCollection('ft:1uqBi75K8AtJa3q4C-DuKUPYRMGvFHtp0c7E-VTA', 'geometry');
+// Create a feature collection that is just oil palm and fiber concessions inside Congo
+var oilPalmInCongo = oilPalm.filterBounds(congo);
+var fiberInCongo = fiber.filterBounds(congo);
+var combined = oilPalmInCongo.merge(fiberInCongo);
+// Get the loss image
+var gfcImage = ee.Image('UMD/hansen/global_forest_change_2013');
+//print(gfcImage) ;
+var lossIn2012 = gfcImage.select(['lossyear']).eq(12);
+//print(lossIn2012) ;
+var loss = gfcImage.select(['loss']);
+
+// Add the loss layer in red          
+Map.addLayer(loss.mask(loss), 
+          {'palette': 'FF0000'},
+           'Loss');       
+
+
+
+
+/*
+var sum=0;
+for(var i = 0; i<12;i++){
+  var lossIn = gfcImage.select(['lossyear'].eq(i));
+  var areaImageIn = lossIn.multiply(ee.Image.pixelArea());  
+  var statsIn = areaImageIn.reduceRegion(
+  {
+    'reducer': ee.Reducer.sum(),
+    'geometry': countries,
+    'maxPixels': 5e9
+  });
+  sum+=statsIn.getInfo().lossyear ;
+}
+print('sum of area lost in each year: ' + sum + ' square meters');
+
+*/
+
+var areaImage = lossIn2012.multiply(ee.Image.pixelArea());
+var areaImage1 = loss.multiply(ee.Image.pixelArea());
+
+// Calculate the area loss pixels in Congo
+var stats = areaImage.reduceRegion(
+  {
+    'reducer': ee.Reducer.sum(),
+    'geometry': countries,
+    'maxPixels': 5e9
+  });
+  
+  var stats2 = gfcImage.reduceRegion(
+  {
+    'reducer': ee.Reducer.sum(),
+    'geometry': countries,
+    'maxPixels': 5e9
+  });
+// Calculate the area loss pixels in Congo
+var stats1 = areaImage1.reduceRegion(
+  {
+    'reducer': ee.Reducer.sum(),
+    'geometry': countries,
+    'maxPixels': 5e9
+  });
+
+  
+print('tree cover area 2000 in the test area: ' + stats2.getInfo().treecover2000 + ' square meters');
+
+  
+print('area lost: ' + stats1.getInfo().loss + ' square meters');
+
+print('area lost in the test area in 2012: ' + stats.getInfo().lossyear + ' square meters');
+
+
+
+// Calculate the area loss pixels in the concessions
+
+
+var stats = areaImage.reduceRegion(
+  {
+    'reducer': ee.Reducer.sum(),
+    'geometry': countries,
+  });
+print('area lost in concessions: ' + stats.getInfo().lossyear + ' square meters');
+
+
+
+
+
+/*
+// Displaying forest, loss, and gain
+
+var gfcImage = ee.Image('UMD/hansen/global_forest_change_2013');
+var treeCover = gfcImage.select(['treecover2000']);
+var lossImage = gfcImage.select(['loss']);
+var gainImage = gfcImage.select(['gain']);
+
+// Add the tree cover layer in green
+Map.addLayer(treeCover.mask(treeCover), 
+          {'min': [1], 'max': [100],
+           'palette': '000000, 00FF00'},
+           'Forest Cover');
+ 
+// Add the loss layer in red          
+Map.addLayer(lossImage.mask(lossImage), 
+          {'palette': 'FF0000'},
+           'Loss');       
+
+// Add the gain layer in blue
+Map.addLayer(gainImage.mask(gainImage), 
+          {'palette': '0000FF'},
+           'Gain');  
+           
+           
+          
+
+          // Counting FORMA alerts in a several concessions
+
+var palmOil = ee.FeatureCollection('projects/ee-eshan292/assets/testareaforestcleared');
+
+//print(palmOil)
+
+var myConcession = palmOil.filterMetadata('name', 'equals', 'YEDUVA KONDA');
+
+
+
+
+
+print(ee.Geometry.Rectangle(100.36560, 1.89754, 100.64026, 2.20908)) ;
+//var myConcessions = palmOil.filterBounds(aoi);
+var aoi = palmOil.geometry()
+print(aoi)
+var myConcessions = palmOil.filterBounds(aoi)
+
+//print(myConcessions) ;
+
+
+var start = new Date('2011-01-01').getTime() / 1000;
+var end = new Date('2021-12-31').getTime() / 1000;
+
+// Load up FORMA and get 2011
+var forma = ee.Image('FORMA/FORMA_500m');
+var forma2011 = forma.gte(start).and(forma.lte(end));
+
+Map.setCenter(100.36560, 1.89754, 10);
+Map.addLayer(myConcessions, {'color': 'FFFFFF'}, 'concession');
+Map.addLayer(forma2011.mask(forma2011), {'palette': '0000FF'}, 'FORMA alerts in 2011');
+
+//var stats = forma2011.reduceRegion(ee.Reducer.sum(), myConcession);
+//print(stats.getInfo());
+
+var result = forma2011.reduceRegions(palmOil, ee.Reducer.sum());
+print(result.getInfo());
+
+
+
+var features = result.getInfo().features;
+for (var loop = 0; loop < features.length; ++loop) {
+  print(features[loop].properties.name + ' alerts: ' + features[loop].properties.sum);
+}
+
+
+/*
+ 
+ var start = new Date('2011-01-01').getTime();
+var end = new Date('2011-12-31').getTime();
+var region = ee.Geometry.Rectangle(-59.81163, -9.43348, -59.27561,-9.22818);
+
+// Load up SAD and get 2011
+var sad = ee.FeatureCollection('projects/ee-eshan292/assets/pariveshtestarea2');
+var sad2011 = sad.filterMetadata('date', 'greater_than', start);
+sad2011 = sad2011.filterMetadata('date', 'less_than', end);
+
+// Find just the polygons that intersect the region of interest and display them
+sad2011 = sad2011.filterBounds(region);
+Map.addLayer(sad2011, {'color':'FF0000'}, 'SAD');
+Map.setCenter( -59.57199,-9.35829, 11);
+
+var union = sad2011.union();
+var first = ee.Feature(union.first());
+var area = first.area();
+print(area.getInfo());
+
+
+
+*/
