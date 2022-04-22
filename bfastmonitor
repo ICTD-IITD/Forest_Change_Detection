@@ -1,0 +1,56 @@
+var norway = ee.FeatureCollection("FAO/GAUL_SIMPLIFIED_500m/2015/level0").filter(ee.Filter.eq('ADM0_NAME', "Norway"));
+var myPoints = ee.FeatureCollection.randomPoints(norway, 10);
+
+var engine = require('users/andreim/geeMonitor:monitor.js');
+
+
+//var roi =  myPoints;//ee.Geometry.Point(-60.00, -14.33);// region of interest as a Feature
+
+var geometry3 = ee.Geometry.Point(81,56, 23.88);
+
+
+var roi = geometry3;
+
+//var roi = geometry2 ;
+
+
+
+
+var historyStart = "2000-01-01"; // The starting date of the stable period.
+var historyEnd = "2018-12-31"; // The end date of the stable period.
+var monitoringStart = "2019-01-01"; // The starting date of the monitoring period.
+var monitoringEnd = "2020-01-01"; // End date of monitoring period. 
+var h = 0.25; //numeric scalar from interval (0,1) specifying the bandwidth relative to the sample size in MOSUM/ME monitoring processes
+var period = 2; // maximum time, relative to the history period, that should be monitored. The default is 10 times the history period.
+var alpha = 0.05; //Significance level of the monitoring (and ROC, if selected) procedure, i.e., probability of type I error.
+var magnitudeThreshold = 0; //Threshold for magnitude level for which a change should be considered. Default is 0.
+var harmonics = 1; //Order of the harmonic term.
+
+var result = engine.bfastMonitor(roi,historyStart,historyEnd,monitoringStart,monitoringEnd,h,period,alpha,magnitudeThreshold,harmonics);
+
+/*
+//You need to select the ImageCollection that you are interested in using the . operator. Then filter the ImageCollection to get the layer (Image) you want, e.g. the break timing:
+result = result.bfastResults.filter(ee.Filter.eq("system:index", "1")).first();
+
+var myReduced = result.reduceRegions({
+  collection: myPoints,
+  reducer: ee.Reducer.first(),
+  scale: 30,
+  tileScale : 16
+});
+
+*/
+print(result.bfastResults) ;
+
+//Map.addLayer(result.bfastResults)
+
+
+
+//Map.centerObject(roi, 11);
+//Map.addLayer(roi, {}, 'ROI');
+
+/*
+Map.addLayer(timeCnk2, {min: 2017, max: 2018,'palette' : '00BFFF,CC2EFA,A901DB,6A0888,5858FA,0101DF,2E2EFE,0B0B61'},"Time of change");
+Map.addLayer(Cnk, {min: -0.4, max:0,'palette' : 'F4FA58,FFFF00,F7D358,F7D358,FFBF00,FF4000,B43104,8A0808'}, 'Magnitude of change');
+Map.addLayer(criticalBorder1 , {}, 'Time of change');
+*/
