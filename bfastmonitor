@@ -6,7 +6,7 @@ var engine = require('users/andreim/geeMonitor:monitor.js');
 
 //var roi =  myPoints;//ee.Geometry.Point(-60.00, -14.33);// region of interest as a Feature
 
-var geometry3 = ee.Geometry.Point(81,56, 23.88);
+var geometry3 = ee.Geometry.Point(81.56, 23.88);
 
 
 var roi = geometry3;
